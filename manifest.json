@@ -1,7 +1,7 @@
 {
   "id": "hugo-boss",
   "name": "Hugo Boss",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "1.0.0",
   "description": "Preview, publish, and deploy your Hugo blog without leaving your editor.",
   "author": "Jerod Santo",
