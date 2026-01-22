@@ -1,6 +1,6 @@
 # Hugo Boss 💪
 
-Hugo bloggin' with Obsidian like a boss. Preview, publish, and deploy your blog without leaving your editor.
+Hugo bloggin' with Obsidian like a boss. Preview, publish, and deploy your Hugo blog without leaving your editor.
 
 > Remember when people used to say *boss*, when they were describing something that was really cool? Like:
 >
