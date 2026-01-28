@@ -10,6 +10,7 @@ import {
   Menu,
   setIcon,
   FuzzySuggestModal,
+  ViewStateResult,
 } from "obsidian";
 import { ChildProcess, spawn } from "child_process";
 import * as path from "path";
@@ -182,7 +183,7 @@ export default class HugoBossPlugin extends Plugin {
 
     menu.addItem((item) => {
       item
-        .setTitle("New Post")
+        .setTitle("New post")
         .setIcon("file-plus")
         .onClick(() => {
           this.createNewDraft();
@@ -191,7 +192,7 @@ export default class HugoBossPlugin extends Plugin {
 
     menu.addItem((item) => {
       item
-        .setTitle(this.hugoServerProcess ? "Stop Preview" : "Preview Site")
+        .setTitle(this.hugoServerProcess ? "Stop preview" : "Preview site")
         .setIcon("play-circle")
         .onClick(() => {
           this.togglePreview();
@@ -200,7 +201,7 @@ export default class HugoBossPlugin extends Plugin {
 
     menu.addItem((item) => {
       item
-        .setTitle("Publish Post")
+        .setTitle("Publish post")
         .setIcon("rocket")
         .onClick(() => {
           this.publishCurrentFile();
@@ -209,7 +210,7 @@ export default class HugoBossPlugin extends Plugin {
 
     menu.addItem((item) => {
       item
-        .setTitle("Deploy Site")
+        .setTitle("Deploy site")
         .setIcon("refresh-cw")
         .onClick(() => {
           this.syncHugo();
@@ -275,7 +276,7 @@ draft: true
 `;
   }
 
-  private async togglePreview() {
+  private togglePreview(): void {
     // If server is running, stop it and close preview
     if (this.hugoServerProcess) {
       this.stopHugoServer();
@@ -309,10 +310,11 @@ draft: true
     const previewUrl = this.getPreviewUrlForActiveFile();
 
     // Wait for server to start, then open preview
-    setTimeout(async () => {
-      await this.openPreviewPane(previewUrl);
-      this.updatePreviewButtonState(true);
-      new Notice("Hugo preview started");
+    setTimeout(() => {
+      void this.openPreviewPane(previewUrl).then(() => {
+        this.updatePreviewButtonState(true);
+        new Notice("Hugo preview started");
+      });
     }, HUGO_SERVER_STARTUP_DELAY_MS);
   }
 
@@ -373,7 +375,7 @@ draft: true
     this.app.workspace.revealLeaf(leaf);
   }
 
-  private async syncHugo() {
+  private syncHugo(): void {
     if (!this.settings.hugoSiteDir) {
       new Notice("Hugo site directory not configured. Check plugin settings.");
       return;
@@ -387,12 +389,6 @@ draft: true
 
     // Use spawn with array arguments to prevent command injection
     const hugoProcess = spawn(shell, ["-i", "-c", `"${hugoBinary}" -s "${siteDir}"`]);
-
-    let errorOutput = "";
-
-    hugoProcess.stderr?.on("data", (data) => {
-      errorOutput += data.toString();
-    });
 
     hugoProcess.on("close", (code) => {
       if (code !== 0) {
@@ -598,7 +594,7 @@ class HugoPreviewView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Hugo Preview";
+    return "Hugo preview";
   }
 
   getIcon(): string {
@@ -617,7 +613,7 @@ class HugoPreviewView extends ItemView {
     }
   }
 
-  async setState(state: { url?: string }, result: any) {
+  async setState(state: { url?: string }, result: ViewStateResult): Promise<void> {
     if (state.url && this.plugin.isValidPreviewUrl(state.url)) {
       this.currentUrl = state.url;
       this.setWebviewUrl(this.currentUrl);
@@ -629,7 +625,7 @@ class HugoPreviewView extends ItemView {
     return { url: this.currentUrl };
   }
 
-  async onOpen() {
+  onOpen(): Promise<void> {
     // Get URL from plugin with validation
     const pendingUrl = this.plugin.pendingPreviewUrl || this.plugin.getBaseUrl();
     this.currentUrl = this.plugin.isValidPreviewUrl(pendingUrl)
@@ -645,19 +641,16 @@ class HugoPreviewView extends ItemView {
     this.webviewEl.setAttribute("src", this.currentUrl);
     this.webviewEl.addClass("hugo-preview-webview");
 
-    // Style the webview to fill the container
-    this.webviewEl.style.width = "100%";
-    this.webviewEl.style.height = "100%";
-    this.webviewEl.style.border = "none";
-
     container.appendChild(this.webviewEl);
+    return Promise.resolve();
   }
 
-  async onClose() {
+  onClose(): Promise<void> {
     if (this.webviewEl) {
       this.webviewEl.remove();
       this.webviewEl = null;
     }
+    return Promise.resolve();
   }
 
   refresh() {
@@ -821,9 +814,10 @@ class TemplateSuggestModal extends FuzzySuggestModal<TFile> {
     return item.path;
   }
 
-  async onChooseItem(item: TFile, evt: MouseEvent | KeyboardEvent): Promise<void> {
+  onChooseItem(item: TFile): void {
     this.plugin.settings.draftTemplate = item.path;
-    await this.plugin.saveSettings();
-    this.onChoose();
+    void this.plugin.saveSettings().then(() => {
+      this.onChoose();
+    });
   }
 }
