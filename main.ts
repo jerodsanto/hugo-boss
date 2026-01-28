@@ -66,7 +66,11 @@ export default class HugoBossPlugin extends Plugin {
     return { shell, homeDir };
   }
 
-  private formatDateParts(date: Date): { year: string; month: string; day: string } {
+  private formatDateParts(date: Date): {
+    year: string;
+    month: string;
+    day: string;
+  } {
     return {
       year: date.getFullYear().toString(),
       month: (date.getMonth() + 1).toString().padStart(2, "0"),
@@ -186,7 +190,7 @@ export default class HugoBossPlugin extends Plugin {
         .setTitle("New post")
         .setIcon("file-plus")
         .onClick(() => {
-          this.createNewDraft();
+          void this.createNewDraft();
         });
     });
 
@@ -204,7 +208,7 @@ export default class HugoBossPlugin extends Plugin {
         .setTitle("Publish post")
         .setIcon("rocket")
         .onClick(() => {
-          this.publishCurrentFile();
+          void this.publishCurrentFile();
         });
     });
 
@@ -299,8 +303,19 @@ draft: true
     new Notice("Starting Hugo server...");
 
     // Start hugo server using spawn with array arguments to prevent command injection
-    const hugoArgs = ["server", "-s", siteDir, "--buildDrafts", "--port", port.toString()];
-    this.hugoServerProcess = spawn(shell, ["-i", "-c", `"${hugoBinary}" ${hugoArgs.join(" ")}`]);
+    const hugoArgs = [
+      "server",
+      "-s",
+      siteDir,
+      "--buildDrafts",
+      "--port",
+      port.toString(),
+    ];
+    this.hugoServerProcess = spawn(shell, [
+      "-i",
+      "-c",
+      `"${hugoBinary}" ${hugoArgs.join(" ")}`,
+    ]);
 
     this.hugoServerProcess.on("close", () => {
       this.hugoServerProcess = null;
@@ -372,12 +387,12 @@ draft: true
       type: PREVIEW_VIEW_TYPE,
       active: true,
     });
-    this.app.workspace.revealLeaf(leaf);
+    await this.app.workspace.revealLeaf(leaf);
   }
 
   private syncHugo(): void {
     if (!this.settings.hugoSiteDir) {
-      new Notice("Hugo site directory not configured. Check plugin settings.");
+      new Notice("Hugo site directory not configured. Check settings.");
       return;
     }
 
@@ -388,7 +403,11 @@ draft: true
     new Notice("Running Hugo...");
 
     // Use spawn with array arguments to prevent command injection
-    const hugoProcess = spawn(shell, ["-i", "-c", `"${hugoBinary}" -s "${siteDir}"`]);
+    const hugoProcess = spawn(shell, [
+      "-i",
+      "-c",
+      `"${hugoBinary}" -s "${siteDir}"`,
+    ]);
 
     hugoProcess.on("close", (code) => {
       if (code !== 0) {
@@ -416,21 +435,21 @@ draft: true
     const syncCmd = this.expandHomePath(this.settings.syncCommand);
     const siteDir = this.expandHomePath(this.settings.hugoSiteDir);
 
-    new Notice("Syncing...");
+    new Notice("Deploying...");
 
     // Use spawn with array arguments to prevent command injection
     const syncProcess = spawn(shell, ["-i", "-c", syncCmd], { cwd: siteDir });
 
     syncProcess.on("close", (code) => {
       if (code !== 0) {
-        new Notice("Sync failed");
+        new Notice("Deploy failed");
         return;
       }
-      new Notice("Sync complete!");
+      new Notice("Deplooy complete!");
     });
 
     syncProcess.on("error", () => {
-      new Notice("Sync failed");
+      new Notice("Deploy failed");
     });
   }
 
@@ -521,7 +540,9 @@ draft: true
 
     const assetCount = embeddedAssets.length;
     const assetMsg =
-      assetCount > 0 ? ` (with ${assetCount} asset${assetCount > 1 ? "s" : ""})` : "";
+      assetCount > 0
+        ? ` (with ${assetCount} asset${assetCount > 1 ? "s" : ""})`
+        : "";
     new Notice(`Published${assetMsg}!`);
   }
 
@@ -613,7 +634,10 @@ class HugoPreviewView extends ItemView {
     }
   }
 
-  async setState(state: { url?: string }, result: ViewStateResult): Promise<void> {
+  async setState(
+    state: { url?: string },
+    result: ViewStateResult,
+  ): Promise<void> {
     if (state.url && this.plugin.isValidPreviewUrl(state.url)) {
       this.currentUrl = state.url;
       this.setWebviewUrl(this.currentUrl);
@@ -627,7 +651,8 @@ class HugoPreviewView extends ItemView {
 
   onOpen(): Promise<void> {
     // Get URL from plugin with validation
-    const pendingUrl = this.plugin.pendingPreviewUrl || this.plugin.getBaseUrl();
+    const pendingUrl =
+      this.plugin.pendingPreviewUrl || this.plugin.getBaseUrl();
     this.currentUrl = this.plugin.isValidPreviewUrl(pendingUrl)
       ? pendingUrl
       : this.plugin.getBaseUrl();
